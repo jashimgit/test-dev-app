@@ -1,9 +1,13 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import cx from "classnames";
 import { AuthService } from "../../Services/Auth";
-import { useDispatch } from "react-redux";
+import { AuthUser } from "./../../Reducers/Auth";
 import { setUser } from "../../Reducers/Auth";
+import { useDispatch, useSelector } from "react-redux";
+import { useHistory } from "react-router-dom";
+import { RootState } from "../../store";
 
 const Schema = Yup.object().shape({
   email: Yup.string().required("Required").email(),
@@ -11,7 +15,9 @@ const Schema = Yup.object().shape({
 });
 
 const BasicAuth = () => {
+  const auth = useSelector((state: RootState) => state.auth.user);
   const dispatch = useDispatch();
+  const history = useHistory();
   const formik = useFormik({
     initialValues: {
       email: "",
@@ -22,12 +28,19 @@ const BasicAuth = () => {
     onSubmit: async (values, { setFieldError, setSubmitting, resetForm }) => {
       // send data to server database
       const { email, password } = values;
-      const user = AuthService.login(email, password);
-      console.log(user);
+      const user = await AuthService.login(email, password);
       // get response  and dispatch
-      dispatch(setUser(user));
+      dispatch(setUser({ user: user.data as AuthUser }));
+      // redirect to secure page
+      handleRedirect(auth, true);
     },
   });
+
+  const handleRedirect = (auth, redirect: boolean) => {
+    if (redirect) {
+      history.push("/secure");
+    }
+  };
 
   return (
     <form onSubmit={formik.handleSubmit}>
